@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ViewTube</title>
+  <style>
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --bg: #0f0f0f;
+  --bg2: #181818;
+  --bg3: #222222;
+  --bg4: #2d2d2d;
+  --surface: #1a1a1a;
+  --border: rgba(255,255,255,0.08);
+  --text: #f1f1f1;
+  --text2: #aaaaaa;
+  --text3: #717171;
+  --accent: #FF3B3B;
+  --accent2: #ff6b6b;
+  --chip-bg: rgba(255,255,255,0.1);
+  --chip-active: #f1f1f1;
+  --chip-active-text: #0f0f0f;
+  --shadow: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-hover: 0 16px 48px rgba(0,0,0,0.7);
+  --nav-h: 56px;
+  --sidebar-w: 240px;
+  --sidebar-collapsed: 72px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.2s ease;
+  --font: 'Outfit', sans-serif;
+}
+
+[data-theme="light"] {
+  --bg: #ffffff;
+  --bg2: #f9f9f9;
+  --bg3: #f2f2f2;
+  --bg4: #e5e5e5;
+  --surface: #ffffff;
+  --border: rgba(0,0,0,0.08);
+  --text: #0f0f0f;
+  --text2: #606060;
+  --text3: #909090;
+  --chip-bg: rgba(0,0,0,0.06);
+  --chip-active: #0f0f0f;
+  --chip-active-text: #ffffff;
+  --shadow: 0 4px 20px rgba(0,0,0,0.1);
+  --shadow-hover: 0 8px 30px rgba(0,0,0,0.18);
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; border: none; background: none; color: inherit; font-family: var(--font); }
+img { display: block; max-width: 100%; }
+svg { display: block; }
+
+/* ===== NAVBAR ===== */
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.3s;
+}
+
+.nav-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.nav-center { flex: 1; max-width: 640px; display: flex; align-items: center; gap: 8px; }
+.nav-right { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
+
+/* Menu button */
+.menu-btn {
+  width: 40px; height: 40px;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 5px; border-radius: 50%; padding: 0;
+  transition: background var(--transition);
+}
+.menu-btn:hover { background: var(--bg3); }
+.menu-btn span {
+  display: block; width: 18px; height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform 0.3s, opacity 0.3s;
+}
+.sidebar-open .menu-btn span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.sidebar-open .menu-btn span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.sidebar-open .menu-btn span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Logo */
+.logo { display: flex; align-items: center; }
+.logo-icon { height: 20px; width: 90px; color: var(--text); }
+.logo-icon text { fill: var(--text); }
+
+/* Search */
+.search-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.search-wrapper:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255,59,59,0.15);
+}
+.search-input {
+  flex: 1; padding: 9px 16px;
+  background: transparent; border: none; outline: none;
+  font-family: var(--font); font-size: 14px; color: var(--text);
+}
+.search-input::placeholder { color: var(--text3); }
+.search-btn {
+  width: 44px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg3); border-left: 1px solid var(--border);
+  flex-shrink: 0; transition: background var(--transition);
+}
+.search-btn:hover { background: var(--bg4); }
+.search-btn svg { width: 18px; height: 18px; color: var(--text2); }
+
+.mic-btn {
+  width: 40px; height: 40px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--bg3);
+  transition: background var(--transition);
+}
+.mic-btn:hover { background: var(--bg4); }
+.mic-btn svg { width: 18px; height: 18px; }
+
+/* Nav icon buttons */
+.icon-btn {
+  width: 40px; height: 40px; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; transition: background var(--transition);
+}
+.icon-btn:hover { background: var(--bg3); }
+.icon-btn svg { width: 20px; height: 20px; }
+
+.notif-badge {
+  position: absolute; top: 4px; right: 4px;
+  width: 16px; height: 16px;
+  background: var(--accent); color: #fff;
+  border-radius: 50%; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* Tooltip */
+.tooltip { position: relative; }
+.tooltip::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%) scale(0.8);
+  background: var(--bg4); color: var(--text);
+  padding: 4px 8px; border-radius: 6px; font-size: 12px;
+  white-space: nowrap; pointer-events: none; opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+  border: 1px solid var(--border);
+}
+.tooltip:hover::after { opacity: 1; transform: translateX(-50%) scale(1); }
+
+/* Theme toggle */
+.theme-btn {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; transition: background var(--transition);
+}
+.theme-btn:hover { background: var(--bg3); }
+.theme-btn svg { width: 18px; height: 18px; }
+[data-theme="dark"] .sun-icon { display: none; }
+[data-theme="light"] .moon-icon { display: none; }
+[data-theme="dark"] .moon-icon { display: block; }
+[data-theme="light"] .sun-icon { display: block; }
+
+/* Avatar */
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%; background: var(--accent);
+  color: #fff; font-weight: 700; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: opacity var(--transition), transform var(--transition);
+}
+.avatar:hover { opacity: 0.85; transform: scale(1.05); }
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  position: fixed;
+  top: var(--nav-h); left: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  overflow-y: auto; overflow-x: hidden;
+  z-index: 90;
+  transition: width 0.25s ease, transform 0.25s ease, background 0.3s;
+  padding: 12px 0;
+}
+.sidebar::-webkit-scrollbar { width: 0; }
+
+.sidebar-nav { display: flex; flex-direction: column; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  margin: 1px 8px;
+  color: var(--text2);
+  font-size: 14px; font-weight: 400;
+  transition: background var(--transition), color var(--transition);
+  white-space: nowrap; overflow: hidden;
+  position: relative;
+}
+.nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--bg3); color: var(--text); font-weight: 600; }
+.nav-item.active::before {
+  content: '';
+  position: absolute; left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 60%;
+  background: var(--accent);
+  border-radius: 0 3px 3px 0;
+}
+
+.sidebar-divider {
+  height: 1px; background: var(--border);
+  margin: 12px 0;
+}
+.sidebar-label {
+  padding: 4px 24px 6px;
+  font-size: 11px; font-weight: 600;
+  color: var(--text3); text-transform: uppercase; letter-spacing: 1px;
+}
+
+.sub-item { padding: 8px 20px; }
+.sub-avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  color: #fff; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); margin-left: auto; flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+
+/* Sidebar collapsed */
+.sidebar-collapsed .sidebar { width: var(--sidebar-collapsed); }
+.sidebar-collapsed .sidebar .nav-item { padding: 10px; justify-content: center; }
+.sidebar-collapsed .sidebar .nav-item span,
+.sidebar-collapsed .sidebar .sidebar-label,
+.sidebar-collapsed .sidebar .sidebar-divider { opacity: 0; pointer-events: none; }
+.sidebar-collapsed .sidebar .sub-avatar { margin: 0; }
+.sidebar-collapsed .sidebar .live-dot { display: none; }
+.sidebar-collapsed .main-content { margin-left: var(--sidebar-collapsed); }
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+  margin-top: var(--nav-h);
+  margin-left: var(--sidebar-w);
+  padding: 0 24px 40px;
+  min-height: calc(100vh - var(--nav-h));
+  transition: margin-left 0.25s ease;
+}
+
+/* ===== CATEGORY CHIPS ===== */
+.category-bar {
+  position: sticky;
+  top: var(--nav-h);
+  background: var(--bg);
+  z-index: 80;
+  padding: 16px 0 12px;
+  border-bottom: 1px solid transparent;
+  transition: background 0.3s, border-color 0.3s;
+}
+.category-bar.scrolled { border-color: var(--border); }
+.category-chips {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.category-chips::-webkit-scrollbar { display: none; }
+.chip {
+  padding: 7px 14px; border-radius: 20px;
+  background: var(--chip-bg); color: var(--text2);
+  font-size: 13px; font-weight: 500; font-family: var(--font);
+  white-space: nowrap; flex-shrink: 0;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+  border: 1px solid transparent;
+}
+.chip:hover { background: var(--bg4); color: var(--text); transform: translateY(-1px); }
+.chip.active {
+  background: var(--chip-active); color: var(--chip-active-text);
+  font-weight: 600;
+}
+
+/* ===== VIDEO GRID ===== */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding-top: 24px;
+}
+
+/* ===== VIDEO CARD ===== */
+.video-card {
+  cursor: pointer;
+  animation: fadeUp 0.4s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.thumb-wrap {
+  position: relative; width: 100%;
+  padding-bottom: 56.25%; /* 16:9 */
+  border-radius: var(--radius); overflow: hidden;
+  background: var(--bg3);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.video-card:hover .thumb-wrap {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-hover);
+}
+.thumb-wrap img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.video-card:hover .thumb-wrap img { transform: scale(1.05); }
+
+.duration-badge {
+  position: absolute; bottom: 8px; right: 8px;
+  background: rgba(0,0,0,0.85); color: #fff;
+  font-size: 11px; font-weight: 600;
+  padding: 2px 6px; border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+.live-badge {
+  position: absolute; top: 8px; left: 8px;
+  background: var(--accent); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.play-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0);
+  transition: background 0.2s;
+}
+.video-card:hover .play-overlay { background: rgba(0,0,0,0.3); }
+.play-overlay svg {
+  width: 44px; height: 44px; color: #fff;
+  opacity: 0; transform: scale(0.8);
+  transition: opacity 0.2s, transform 0.2s;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+}
+.video-card:hover .play-overlay svg { opacity: 1; transform: scale(1); }
+
+.card-info { padding: 10px 4px 4px; display: flex; gap: 10px; }
+.channel-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  flex-shrink: 0; font-size: 13px; font-weight: 700;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  margin-top: 2px;
+}
+.card-text { flex: 1; min-width: 0; }
+.card-title {
+  font-size: 14px; font-weight: 500; color: var(--text);
+  line-height: 1.4; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-bottom: 4px;
+  transition: color var(--transition);
+}
+.video-card:hover .card-title { color: var(--accent2); }
+.card-channel { font-size: 12px; color: var(--text2); margin-bottom: 2px; }
+.card-meta { font-size: 12px; color: var(--text3); }
+
+/* ===== SKELETON LOADING ===== */
+.skeleton-card { pointer-events: none; }
+.skeleton {
+  background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+.skel-thumb { width: 100%; padding-bottom: 56.25%; border-radius: var(--radius); }
+.skel-line { height: 12px; margin-top: 10px; }
+.skel-line.short { width: 60%; }
+.skel-line.shorter { width: 40%; }
+.skel-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; margin-top: 10px; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center; padding: 80px 20px;
+  grid-column: 1/-1;
+}
+.empty-state svg { width: 64px; height: 64px; margin: 0 auto 16px; color: var(--text3); }
+.empty-state h3 { font-size: 20px; color: var(--text2); margin-bottom: 8px; }
+.empty-state p { font-size: 14px; color: var(--text3); }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+.modal {
+  background: var(--bg2);
+  border-radius: 16px;
+  width: 100%; max-width: 800px;
+  max-height: 90vh; overflow-y: auto;
+  position: relative;
+  transform: translateY(24px) scale(0.97);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid var(--border);
+  scrollbar-width: none;
+}
+.modal::-webkit-scrollbar { display: none; }
+.modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+.modal-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(0,0,0,0.5); color: #fff; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition), transform var(--transition);
+}
+.modal-close:hover { background: rgba(255,59,59,0.8); transform: rotate(90deg); }
+.modal-close svg { width: 16px; height: 16px; }
+
+.player-wrap {
+  position: relative; background: #000;
+  border-radius: 16px 16px 0 0; overflow: hidden;
+}
+.fake-player {
+  position: relative;
+  width: 100%; padding-bottom: 56.25%;
+  background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460, #533483);
+  background-size: 400% 400%;
+  animation: gradShift 6s ease infinite;
+}
+@keyframes gradShift {
+  0%,100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.play-pulse {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.play-pulse svg {
+  width: 64px; height: 64px; color: rgba(255,255,255,0.7);
+  animation: breathe 2s ease infinite;
+}
+@keyframes breathe {
+  0%,100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+.player-overlay {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 2px);
+}
+.player-controls {
+  background: #000; padding: 8px 12px 12px;
+}
+.progress-bar {
+  height: 3px; background: rgba(255,255,255,0.15);
+  border-radius: 2px; cursor: pointer; margin-bottom: 10px;
+  transition: height 0.15s;
+}
+.progress-bar:hover { height: 5px; }
+.progress-fill {
+  height: 100%; background: var(--accent);
+  border-radius: 2px; width: 0%;
+  transition: width 0.5s linear;
+}
+.controls-row { display: flex; align-items: center; justify-content: space-between; }
+.ctrl-left, .ctrl-right { display: flex; align-items: center; gap: 8px; }
+.ctrl-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; color: #fff; transition: background var(--transition);
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.1); }
+.ctrl-btn svg { width: 18px; height: 18px; }
+.time-display { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 400; }
+
+.modal-info { padding: 20px 24px 24px; }
+.modal-title { font-size: 18px; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 10px; }
+.modal-meta { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.modal-channel { font-size: 14px; color: var(--text2); font-weight: 500; }
+.modal-stats { font-size: 13px; color: var(--text3); }
+.modal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.action-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: 20px;
+  background: var(--bg3); color: var(--text2);
+  font-size: 13px; font-weight: 500; font-family: var(--font);
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+  border: 1px solid var(--border);
+}
+.action-btn:hover { background: var(--bg4); color: var(--text); transform: translateY(-1px); }
+.action-btn.liked { background: var(--accent); color: #fff; border-color: var(--accent); }
+.action-btn svg { width: 16px; height: 16px; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--bg4); color: var(--text);
+  padding: 10px 20px; border-radius: 24px;
+  font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 500; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .video-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 900px) {
+  .video-grid { grid-template-columns: repeat(2, 1fr); }
+  .main-content { margin-left: var(--sidebar-collapsed); padding: 0 16px 40px; }
+  .sidebar { width: var(--sidebar-collapsed); }
+  .sidebar .nav-item { padding: 10px; justify-content: center; }
+  .sidebar .nav-item span,
+  .sidebar .sidebar-label,
+  .sidebar .sidebar-divider { display: none; }
+  .sidebar .live-dot { display: none; }
+  .sidebar-collapsed .sidebar { transform: translateX(-100%); }
+  .sidebar-collapsed .main-content { margin-left: 0; }
+  .sidebar-open .sidebar { width: var(--sidebar-w); transform: translateX(0); }
+  .sidebar-open .sidebar .nav-item { padding: 10px 20px; justify-content: flex-start; }
+  .sidebar-open .sidebar .nav-item span,
+  .sidebar-open .sidebar .sidebar-label,
+  .sidebar-open .sidebar .sidebar-divider { display: flex; }
+  .sidebar-open .sidebar .sidebar-divider { display: block; }
+  .sidebar-open .sidebar .sidebar-label { display: block; }
+  .sidebar-open .sidebar .live-dot { display: block; }
+  .sidebar-open .main-content { margin-left: 0; }
+  .mic-btn { display: none; }
+}
+@media (max-width: 640px) {
+  .video-grid { grid-template-columns: 1fr; gap: 16px; }
+  .nav-center { max-width: none; }
+  .nav-right .icon-btn:first-child { display: none; }
+  .main-content { padding: 0 12px 40px; margin-left: 0; }
+  .sidebar { transform: translateX(-100%); width: var(--sidebar-w); }
+  .sidebar-open .sidebar { transform: translateX(0); box-shadow: var(--shadow); }
+  .sidebar-open .sidebar .nav-item { padding: 10px 20px; justify-content: flex-start; }
+  .sidebar-open .sidebar .nav-item span { display: flex; }
+  .category-bar { padding: 12px 0 8px; }
+  .modal { border-radius: 12px; }
+  .modal-info { padding: 16px; }
+  .modal-title { font-size: 16px; }
+}
+
+</style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="nav-left">
+      <button class="menu-btn" id="menuBtn" aria-label="Toggle sidebar">
+        <span></span><span></span><span></span>
+      </button>
+      <a href="#" class="logo">
+        <svg class="logo-icon" viewBox="0 0 90 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="2" width="28" height="16" rx="4" fill="#FF3B3B"/>
+          <polygon points="11,6 11,14 20,10" fill="white"/>
+          <text x="34" y="15" font-family="Outfit" font-weight="700" font-size="14" fill="currentColor">ViewTube</text>
+        </svg>
+      </a>
+    </div>
+
+    <div class="nav-center">
+      <div class="search-wrapper">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search videos..." autocomplete="off"/>
+        <button class="search-btn" id="searchBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+      </div>
+      <button class="mic-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+    </div>
+
+    <div class="nav-right">
+      <button class="icon-btn tooltip" data-tip="Upload" id="uploadBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </button>
+      <button class="icon-btn tooltip notif-btn" data-tip="Notifications" id="notifBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-badge">3</span>
+      </button>
+      <button class="theme-btn" id="themeBtn">
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <div class="avatar" id="avatarBtn">VT</div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-section="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="#" class="nav-item" data-section="trending">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <span>Trending</span>
+      </a>
+      <a href="#" class="nav-item" data-section="subscriptions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+        <span>Subscriptions</span>
+      </a>
+      <a href="#" class="nav-item" data-section="library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Library</span>
+      </a>
+      <a href="#" class="nav-item" data-section="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>History</span>
+      </a>
+
+      <div class="sidebar-divider"></div>
+      <p class="sidebar-label">Subscriptions</p>
+
+      <a href="#" class="nav-item sub-item">
+        <div class="sub-avatar" style="background:#6366f1">TM</div>
+        <span>TechMaster</span>
+        <span class="live-dot"></span>
+      </a>
+      <a href="#" class="nav-item sub-item">
+        <div class="sub-avatar" style="background:#ec4899">CV</div>
+        <span>CodeVault</span>
+      </a>
+      <a href="#" class="nav-item sub-item">
+        <div class="sub-avatar" style="background:#14b8a6">DS</div>
+        <span>DesignStudio</span>
+      </a>
+      <a href="#" class="nav-item sub-item">
+        <div class="sub-avatar" style="background:#f59e0b">GT</div>
+        <span>GameTech</span>
+        <span class="live-dot"></span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
+
+    <!-- CATEGORY CHIPS -->
+    <div class="category-bar">
+      <div class="category-chips" id="categoryChips">
+        <button class="chip active" data-cat="all">All</button>
+        <button class="chip" data-cat="music">Music</button>
+        <button class="chip" data-cat="gaming">Gaming</button>
+        <button class="chip" data-cat="coding">Coding</button>
+        <button class="chip" data-cat="design">Design</button>
+        <button class="chip" data-cat="science">Science</button>
+        <button class="chip" data-cat="travel">Travel</button>
+        <button class="chip" data-cat="news">News</button>
+        <button class="chip" data-cat="cooking">Cooking</button>
+      </div>
+    </div>
+
+    <!-- SKELETON + VIDEO GRID -->
+    <div class="video-grid" id="videoGrid">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state" id="emptyState" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <h3>No videos found</h3>
+      <p>Try a different search or category</p>
+    </div>
+  </main>
+
+  <!-- VIDEO PLAYER MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="player-wrap">
+        <div class="fake-player" id="fakePlayer">
+          <div class="play-pulse">
+            <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div class="player-overlay"></div>
+        </div>
+        <div class="player-controls">
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="controls-row">
+            <div class="ctrl-left">
+              <button class="ctrl-btn" id="playPauseBtn">
+                <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <svg class="pause-icon" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              </button>
+              <button class="ctrl-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              </button>
+              <span class="time-display">0:00 / 4:32</span>
+            </div>
+            <div class="ctrl-right">
+              <button class="ctrl-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-info">
+        <h2 class="modal-title" id="modalTitle">Video Title</h2>
+        <div class="modal-meta">
+          <div class="modal-channel" id="modalChannel">Channel Name</div>
+          <div class="modal-stats" id="modalStats">1.2M views • 2 days ago</div>
+        </div>
+        <div class="modal-actions">
+          <button class="action-btn like-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+            Like
+          </button>
+          <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+            Dislike
+          </button>
+          <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share
+          </button>
+          <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+// ===== VIDEO DATA =====
+const VIDEOS = [
+  { id:1, title:"Building a Full-Stack App with React & Node.js in 2025", channel:"CodeVault", avatar:"CV", avatarColor:"#6366f1", views:"2.4M", time:"3 days ago", duration:"24:18", category:"coding", thumb:"https://picsum.photos/seed/code1/640/360" },
+  { id:2, title:"Lo-Fi Hip Hop Mix — Chill Beats to Study & Relax 🎵", channel:"ChillWave", avatar:"CW", avatarColor:"#8b5cf6", views:"18M", time:"1 week ago", duration:"1:02:45", category:"music", thumb:"https://picsum.photos/seed/music2/640/360" },
+  { id:3, title:"Elden Ring DLC — Every Secret Location You Missed", channel:"GameTech", avatar:"GT", avatarColor:"#f59e0b", views:"4.1M", time:"2 days ago", duration:"38:52", category:"gaming", thumb:"https://picsum.photos/seed/game3/640/360", live:false },
+  { id:4, title:"Designing a Design System from Scratch — Full Tutorial", channel:"DesignStudio", avatar:"DS", avatarColor:"#14b8a6", views:"890K", time:"5 days ago", duration:"51:07", category:"design", thumb:"https://picsum.photos/seed/design4/640/360" },
+  { id:5, title:"James Webb Telescope: New Images That Will Change Science Forever", channel:"SpaceScope", avatar:"SS", avatarColor:"#3b82f6", views:"12M", time:"1 day ago", duration:"18:33", category:"science", thumb:"https://picsum.photos/seed/space5/640/360" },
+  { id:6, title:"Hidden Gems of Kyoto — Places Most Tourists Never See", channel:"WanderLens", avatar:"WL", avatarColor:"#ec4899", views:"3.3M", time:"4 days ago", duration:"22:14", category:"travel", thumb:"https://picsum.photos/seed/travel6/640/360" },
+  { id:7, title:"Machine Learning Explained in 10 Minutes — No Math Required", channel:"TechMaster", avatar:"TM", avatarColor:"#6366f1", views:"7.8M", time:"2 weeks ago", duration:"10:02", category:"coding", thumb:"https://picsum.photos/seed/ml7/640/360" },
+  { id:8, title:"Gordon Ramsay Makes Perfect Risotto — Step by Step", channel:"FoodLab", avatar:"FL", avatarColor:"#ef4444", views:"5.5M", time:"6 days ago", duration:"14:40", category:"cooking", thumb:"https://picsum.photos/seed/cook8/640/360" },
+  { id:9, title:"LIVE: Pro League Grand Finals — Best of 5", channel:"GameTech", avatar:"GT", avatarColor:"#f59e0b", views:"142K", time:"LIVE NOW", duration:"LIVE", category:"gaming", thumb:"https://picsum.photos/seed/live9/640/360", live:true },
+  { id:10, title:"TypeScript 5.5 — Every New Feature in 20 Minutes", channel:"CodeVault", avatar:"CV", avatarColor:"#6366f1", views:"1.1M", time:"8 days ago", duration:"19:48", category:"coding", thumb:"https://picsum.photos/seed/ts10/640/360" },
+  { id:11, title:"AI Music Composition — Making a Full Track with Claude Opus", channel:"SynthLab", avatar:"SL", avatarColor:"#8b5cf6", views:"2.7M", time:"3 days ago", duration:"28:05", category:"music", thumb:"https://picsum.photos/seed/aimusic11/640/360" },
+  { id:12, title:"Breaking: Major Climate Summit Reaches Historic Agreement", channel:"GlobalNews", avatar:"GN", avatarColor:"#64748b", views:"9.2M", time:"12 hours ago", duration:"8:15", category:"news", thumb:"https://picsum.photos/seed/news12/640/360" },
+  { id:13, title:"Figma to Code — Automatically Build Pixel-Perfect UIs", channel:"DesignStudio", avatar:"DS", avatarColor:"#14b8a6", views:"456K", time:"1 week ago", duration:"33:21", category:"design", thumb:"https://picsum.photos/seed/figma13/640/360" },
+  { id:14, title:"Tokyo Street Food Tour — 47 Dishes in One Day 🍜", channel:"WanderLens", avatar:"WL", avatarColor:"#ec4899", views:"6.6M", time:"5 days ago", duration:"45:30", category:"travel", thumb:"https://picsum.photos/seed/tokyo14/640/360" },
+  { id:15, title:"Quantum Computing for Beginners — How Qubits Actually Work", channel:"TechMaster", avatar:"TM", avatarColor:"#6366f1", views:"3.9M", time:"2 weeks ago", duration:"26:47", category:"science", thumb:"https://picsum.photos/seed/quantum15/640/360" },
+  { id:16, title:"Perfect Sourdough Bread — No Knead, No Fuss Recipe", channel:"FoodLab", avatar:"FL", avatarColor:"#ef4444", views:"8.1M", time:"3 weeks ago", duration:"17:22", category:"cooking", thumb:"https://picsum.photos/seed/bread16/640/360" },
+];
+
+// ===== STATE =====
+let state = {
+  category: "all",
+  query: "",
+  sidebarOpen: true,
+  theme: "dark",
+  playing: false,
+  progress: 0,
+  progressTimer: null,
+  currentVideo: null,
+};
+
+// ===== DOM REFS =====
+const videoGrid       = document.getElementById("videoGrid");
+const emptyState      = document.getElementById("emptyState");
+const searchInput     = document.getElementById("searchInput");
+const searchBtn       = document.getElementById("searchBtn");
+const menuBtn         = document.getElementById("menuBtn");
+const categoryChips   = document.getElementById("categoryChips");
+const modalOverlay    = document.getElementById("modalOverlay");
+const modalClose      = document.getElementById("modalClose");
+const modalTitle      = document.getElementById("modalTitle");
+const modalChannel    = document.getElementById("modalChannel");
+const modalStats      = document.getElementById("modalStats");
+const themeBtn        = document.getElementById("themeBtn");
+const playPauseBtn    = document.getElementById("playPauseBtn");
+const progressFill    = document.getElementById("progressFill");
+const uploadBtn       = document.getElementById("uploadBtn");
+const notifBtn        = document.getElementById("notifBtn");
+const fakePlayer      = document.getElementById("fakePlayer");
+const likeBtn         = document.querySelector(".like-btn");
+const toast           = document.getElementById("toast");
+
+// ===== INIT =====
+window.addEventListener("DOMContentLoaded", () => {
+  showSkeletons();
+  setTimeout(() => {
+    renderVideos();
+    restoreTheme();
+  }, 900);
+
+  setupEvents();
+});
+
+// ===== SKELETON =====
+function showSkeletons() {
+  videoGrid.innerHTML = Array.from({length: 8}, () => `
+    <div class="video-card skeleton-card">
+      <div class="thumb-wrap skeleton skel-thumb"></div>
+      <div class="card-info">
+        <div class="skeleton skel-avatar"></div>
+        <div class="card-text" style="flex:1">
+          <div class="skeleton skel-line" style="width:90%"></div>
+          <div class="skeleton skel-line short" style="margin-top:6px"></div>
+          <div class="skeleton skel-line shorter" style="margin-top:4px"></div>
+        </div>
+      </div>
+    </div>
+  `).join("");
+  emptyState.style.display = "none";
+}
+
+// ===== RENDER VIDEOS =====
+function getFilteredVideos() {
+  return VIDEOS.filter(v => {
+    const catMatch = state.category === "all" || v.category === state.category;
+    const queryMatch = !state.query || v.title.toLowerCase().includes(state.query.toLowerCase()) || v.channel.toLowerCase().includes(state.query.toLowerCase());
+    return catMatch && queryMatch;
+  });
+}
+
+function renderVideos() {
+  const videos = getFilteredVideos();
+  if (!videos.length) {
+    videoGrid.innerHTML = "";
+    emptyState.style.display = "flex";
+    emptyState.style.flexDirection = "column";
+    return;
+  }
+  emptyState.style.display = "none";
+  videoGrid.innerHTML = videos.map((v, i) => `
+    <div class="video-card" data-id="${v.id}" style="animation-delay:${i * 0.05}s">
+      <div class="thumb-wrap">
+        <img src="${v.thumb}" alt="${v.title}" loading="lazy" onerror="this.src='https://picsum.photos/seed/${v.id+100}/640/360'"/>
+        ${v.live ? `<span class="live-badge">● Live</span>` : `<span class="duration-badge">${v.duration}</span>`}
+        <div class="play-overlay">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+      </div>
+      <div class="card-info">
+        <div class="channel-avatar" style="background:${v.avatarColor}">${v.avatar}</div>
+        <div class="card-text">
+          <div class="card-title">${v.title}</div>
+          <div class="card-channel">${v.channel}</div>
+          <div class="card-meta">${v.views} views • ${v.time}</div>
+        </div>
+      </div>
+    </div>
+  `).join("");
+
+  // Attach click listeners
+  document.querySelectorAll(".video-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const id = parseInt(card.dataset.id);
+      openModal(VIDEOS.find(v => v.id === id));
+    });
+  });
+}
+
+// ===== MODAL =====
+function openModal(video) {
+  state.currentVideo = video;
+  modalTitle.textContent = video.title;
+  modalChannel.textContent = video.channel;
+  modalStats.textContent = `${video.views} views • ${video.time}`;
+  
+  // Set player gradient based on category
+  const gradients = {
+    music:   "linear-gradient(135deg, #1a1a2e, #4a0e8f, #9b27af)",
+    gaming:  "linear-gradient(135deg, #0a0a0a, #1a3a0a, #2d7a1f)",
+    coding:  "linear-gradient(135deg, #0d0d1a, #0a1628, #1a2f5a)",
+    design:  "linear-gradient(135deg, #1a0a0a, #3a0a2a, #6b1a4a)",
+    science: "linear-gradient(135deg, #0a1a1a, #0a2a3a, #1a4a6a)",
+    travel:  "linear-gradient(135deg, #0a1a0a, #0a2a1a, #1a4a2a)",
+    cooking: "linear-gradient(135deg, #1a0a00, #3a1500, #6a2a00)",
+    news:    "linear-gradient(135deg, #0a0a0a, #1a1a2a, #2a2a4a)",
+  };
+  fakePlayer.style.background = gradients[video.category] || gradients.coding;
+  fakePlayer.style.backgroundSize = "400% 400%";
+
+  modalOverlay.classList.add("open");
+  document.body.style.overflow = "hidden";
+  
+  // Reset play state
+  stopProgress();
+  state.playing = false;
+  state.progress = 0;
+  progressFill.style.width = "0%";
+  updatePlayPause();
+  if (likeBtn) likeBtn.classList.remove("liked");
+}
+
+function closeModal() {
+  modalOverlay.classList.remove("open");
+  document.body.style.overflow = "";
+  stopProgress();
+  state.playing = false;
+  state.currentVideo = null;
+}
+
+// ===== PLAYER CONTROLS =====
+function updatePlayPause() {
+  const playIcon  = playPauseBtn.querySelector(".play-icon");
+  const pauseIcon = playPauseBtn.querySelector(".pause-icon");
+  if (state.playing) {
+    playIcon.style.display  = "none";
+    pauseIcon.style.display = "block";
+  } else {
+    playIcon.style.display  = "block";
+    pauseIcon.style.display = "none";
+  }
+}
+
+function startProgress() {
+  state.progressTimer = setInterval(() => {
+    state.progress = Math.min(state.progress + 0.3, 100);
+    progressFill.style.width = state.progress + "%";
+    if (state.progress >= 100) {
+      stopProgress();
+      state.playing = false;
+      updatePlayPause();
+      state.progress = 0;
+      progressFill.style.width = "0%";
+    }
+  }, 200);
+}
+
+function stopProgress() {
+  if (state.progressTimer) {
+    clearInterval(state.progressTimer);
+    state.progressTimer = null;
+  }
+}
+
+playPauseBtn.addEventListener("click", () => {
+  state.playing = !state.playing;
+  updatePlayPause();
+  if (state.playing) startProgress();
+  else stopProgress();
+});
+
+// Click on fake player to toggle play
+fakePlayer.addEventListener("click", () => {
+  playPauseBtn.click();
+});
+
+// Like button
+if (likeBtn) {
+  likeBtn.addEventListener("click", () => {
+    likeBtn.classList.toggle("liked");
+    showToast(likeBtn.classList.contains("liked") ? "Added to liked videos 👍" : "Removed from liked videos");
+  });
+}
+
+// ===== SEARCH =====
+function doSearch() {
+  state.query = searchInput.value.trim();
+  renderVideos();
+  if (state.query) showToast(`Searching for "${state.query}"`);
+}
+
+searchBtn.addEventListener("click", doSearch);
+searchInput.addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+searchInput.addEventListener("input", () => {
+  if (!searchInput.value) {
+    state.query = "";
+    renderVideos();
+  }
+});
+
+// ===== CATEGORY =====
+categoryChips.addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+  chip.classList.add("active");
+  state.category = chip.dataset.cat;
+  showSkeletons();
+  setTimeout(() => renderVideos(), 400);
+});
+
+// ===== SIDEBAR TOGGLE =====
+menuBtn.addEventListener("click", () => {
+  state.sidebarOpen = !state.sidebarOpen;
+  document.body.classList.toggle("sidebar-open", state.sidebarOpen);
+  document.body.classList.toggle("sidebar-collapsed", !state.sidebarOpen);
+});
+
+// Initialize sidebar
+document.body.classList.add("sidebar-open");
+state.sidebarOpen = true;
+
+// Sidebar nav items
+document.querySelectorAll(".nav-item[data-section]").forEach(item => {
+  item.addEventListener("click", e => {
+    e.preventDefault();
+    document.querySelectorAll(".nav-item[data-section]").forEach(n => n.classList.remove("active"));
+    item.classList.add("active");
+    const section = item.dataset.section;
+    showToast(`Navigating to ${section.charAt(0).toUpperCase() + section.slice(1)}`);
+  });
+});
+
+// ===== THEME =====
+function restoreTheme() {
+  const saved = localStorage.getItem("vt-theme") || "dark";
+  state.theme = saved;
+  document.documentElement.setAttribute("data-theme", saved);
+}
+
+themeBtn.addEventListener("click", () => {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", state.theme);
+  localStorage.setItem("vt-theme", state.theme);
+  showToast(state.theme === "dark" ? "Dark mode on 🌙" : "Light mode on ☀️");
+});
+
+// ===== MODAL CLOSE =====
+modalClose.addEventListener("click", closeModal);
+modalOverlay.addEventListener("click", e => {
+  if (e.target === modalOverlay) closeModal();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && modalOverlay.classList.contains("open")) closeModal();
+});
+
+// ===== NAV BUTTONS =====
+uploadBtn.addEventListener("click", () => showToast("Upload feature coming soon 🎬"));
+notifBtn.addEventListener("click", () => {
+  document.querySelector(".notif-badge").style.display = "none";
+  showToast("You're all caught up! ✅");
+});
+document.querySelector(".avatar").addEventListener("click", () => showToast("Profile menu coming soon 👤"));
+
+// ===== ACTION BUTTONS (non-like) =====
+document.querySelectorAll(".action-btn:not(.like-btn)").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const text = btn.textContent.trim();
+    const msgs = { Dislike: "Disliked 👎", Share: "Link copied to clipboard! 🔗", Save: "Saved to Watch Later 🔖" };
+    showToast(msgs[text] || "Done!");
+  });
+});
+
+// ===== CATEGORY BAR STICKY =====
+const categoryBar = document.querySelector(".category-bar");
+window.addEventListener("scroll", () => {
+  categoryBar.classList.toggle("scrolled", window.scrollY > 10);
+}, { passive: true });
+
+// ===== TOAST =====
+let toastTimer;
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
+}
+
+// ===== MOBILE SIDEBAR OVERLAY =====
+document.addEventListener("click", e => {
+  const sidebar   = document.getElementById("sidebar");
+  const isMobile  = window.innerWidth <= 900;
+  const clickedOutside = !sidebar.contains(e.target) && !menuBtn.contains(e.target);
+  if (isMobile && state.sidebarOpen && clickedOutside && modalOverlay.classList.contains("open") === false) {
+    state.sidebarOpen = false;
+    document.body.classList.remove("sidebar-open");
+    document.body.classList.add("sidebar-collapsed");
+  }
+});
+
+</script>
+</body>
+</html>
